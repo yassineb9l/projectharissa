@@ -1,13 +1,88 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
 <meta charset="UTF-8">
 <title>HARISSA</title>
+
+<style>
+
+body{
+    text-align:center;
+    font-family: Arial;
+    background-color:#f5e2c9;
+}
+
+/* écran de bienvenue */
+#welcomeScreen{
+    width:400px;
+    margin:120px auto;
+    padding:30px;
+    background:white;
+    border-radius:10px;
+    box-shadow:0px 0px 10px gray;
+}
+
+/* zone du jeu cachée au début */
+#gameContainer{
+    display:none;
+}
+
+/* zone du jeu */
+#gameArea{
+    width:1000px;
+    height:450px;
+    border:3px solid black;
+    margin:30px auto;
+    background:#eee;
+}
+
+button{
+    padding:10px 20px;
+    font-size:16px;
+    margin:10px;
+}
+
+</style>
+
 </head>
 
 <body>
 
+<!-- PAGE 1 : Bienvenue -->
+<div id="welcomeScreen">
+<h1>Bienvenue dans HARISSA</h1>
+<button onclick="startGame()">Jouer</button>
+</div>
+
+<!-- PAGE 2 : Jeu -->
+<div id="gameContainer">
+
 <h1>HARISSA</h1>
 
+<div>
+Score : 0 | Score précédent : 0
+</div>
+
+<div id="gameArea"></div>
+
+<button>Start</button>
+<button>Restart</button>
+
+</div>
+
+<script>
+
+function startGame(){
+
+    document.getElementById("welcomeScreen").style.display = "none";
+
+    document.getElementById("gameContainer").style.display = "block";
+
+}
+
+</script>
+
 </body>
+
 </html>
