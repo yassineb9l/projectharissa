@@ -54,22 +54,22 @@ function mettreAJourScore() {
 // IMAGES — remplace les chemins par tes vrais fichiers
 // ============================================================
 const imgJoueurDebout = new Image();
-imgJoueurDebout.src = "images/joueur_debout.png";
+imgJoueurDebout.src = "Cours.gif"; // joueur qui court (et saute)
 const imgJoueurAccroupi = new Image();
-imgJoueurAccroupi.src = "images/joueur_accroupi.png";
+imgJoueurAccroupi.src = "images/joueur_accroupi.png"; // ← à remplacer
 const imgJoueurMort = new Image();
-imgJoueurMort.src = "images/joueur_mort.png";
-// 5 obstacles — remplace les chemins par tes vrais fichiers
+imgJoueurMort.src = "images/joueur_mort.png"; // ← à remplacer
+// 5 obstacles — images Decor
 const imgObstacle1 = new Image();
-imgObstacle1.src = "images/obstacle1.png";
+imgObstacle1.src = "Decor1.png";
 const imgObstacle2 = new Image();
-imgObstacle2.src = "images/obstacle2.png";
+imgObstacle2.src = "Decor2.png";
 const imgObstacle3 = new Image();
-imgObstacle3.src = "images/obstacle3.png";
+imgObstacle3.src = "Decor3.png";
 const imgObstacle4 = new Image();
-imgObstacle4.src = "images/obstacle4.png";
+imgObstacle4.src = "Decor4.png";
 const imgObstacle5 = new Image();
-imgObstacle5.src = "images/obstacle5.png";
+imgObstacle5.src = "Decor5.png";
 
 // ============================================================
 // LE JOUEUR
