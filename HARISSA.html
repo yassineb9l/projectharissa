@@ -7,40 +7,77 @@
 
 <style>
 
+/* page */
 body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#f5e2c9;
     text-align:center;
-    font-family: Arial;
-    background-color:#f5e2c9;
 }
 
-/* écran de bienvenue */
+/* écran de bienvenue centré */
 #welcomeScreen{
-    width:400px;
-    margin:120px auto;
-    padding:30px;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+/* boite bienvenue */
+.welcomeBox{
     background:white;
+    padding:40px;
     border-radius:10px;
     box-shadow:0px 0px 10px gray;
 }
 
-/* zone du jeu cachée au début */
+/* boutons */
+button{
+    padding:10px 25px;
+    font-size:16px;
+    margin:10px;
+    cursor:pointer;
+}
+
+/* bouton jouer */
+.playBtn{
+    background:#ff4d4d;
+    color:white;
+    border:none;
+    border-radius:5px;
+}
+
+/* zone jeu cachée au début */
 #gameContainer{
     display:none;
 }
 
+/* zone score */
+#scoreZone{
+    margin-top:10px;
+}
+
 /* zone du jeu */
 #gameArea{
-    width:1000px;
-    height:450px;
+    width:800px;
+    height:300px;
     border:3px solid black;
     margin:30px auto;
     background:#eee;
 }
 
-button{
-    padding:10px 20px;
-    font-size:16px;
-    margin:10px;
+/* animation apparition */
+.fade{
+    animation:fadeIn 0.5s;
+}
+
+@keyframes fadeIn{
+    from{opacity:0;}
+    to{opacity:1;}
 }
 
 </style>
@@ -49,35 +86,50 @@ button{
 
 <body>
 
-<!-- PAGE 1 : Bienvenue -->
+<!-- PAGE 1 : BIENVENUE -->
 <div id="welcomeScreen">
+
+<div class="welcomeBox">
+
 <h1>Bienvenue dans HARISSA</h1>
-<button onclick="startGame()">Jouer</button>
+
+<button class="playBtn" onclick="startGame()">Jouer</button>
+
 </div>
 
-<!-- PAGE 2 : Jeu -->
+</div>
+
+<!-- PAGE 2 : JEU -->
 <div id="gameContainer">
 
 <h1>HARISSA</h1>
 
-<div>
+<div id="scoreZone">
 Score : 0 | Score précédent : 0
 </div>
 
 <div id="gameArea"></div>
 
+<div>
 <button>Start</button>
 <button>Restart</button>
+</div>
 
 </div>
 
 <script>
 
+/* passer de bienvenue au jeu */
+
 function startGame(){
 
-    document.getElementById("welcomeScreen").style.display = "none";
+document.getElementById("welcomeScreen").style.display="none";
 
-    document.getElementById("gameContainer").style.display = "block";
+let game=document.getElementById("gameContainer");
+
+game.style.display="block";
+
+game.classList.add("fade");
 
 }
 
