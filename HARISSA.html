@@ -7,15 +7,14 @@
 
 <style>
 
-
 body{
     margin:0;
     font-family:Arial, sans-serif;
-    background:#f5e2c9;
+    background:#e6cfb0;
     text-align:center;
 }
 
-
+/* écran de bienvenue */
 #welcomeScreen{
     position:fixed;
     top:0;
@@ -27,41 +26,59 @@ body{
     align-items:center;
 }
 
-
+/* boite centrale */
 .welcomeBox{
     background:white;
-    padding:40px;
-    border-radius:10px;
-    box-shadow:0px 0px 10px gray;
+    padding:80px;
+    border-radius:15px;
+    box-shadow:0px 0px 15px gray;
+    width:600px;
 }
 
-
-button{
-    padding:10px 25px;
-    font-size:16px;
-    margin:10px;
-    cursor:pointer;
+/* titre principal */
+.welcomeBox h1{
+    font-size:40px;
 }
 
+/* sous titre */
+.welcomeBox h3{
+    font-size:22px;
+    margin-top:10px;
+}
 
+/* image */
+.welcomeImage{
+    width:300px;
+    margin:30px 0;
+}
+
+/* bouton jouer */
 .playBtn{
+    padding:15px 35px;
+    font-size:20px;
     background:#ff4d4d;
     color:white;
     border:none;
-    border-radius:5px;
+    border-radius:8px;
+    cursor:pointer;
 }
 
+.playBtn:hover{
+    background:#cc0000;
+}
 
+/* zone du jeu cachée au début */
 #gameContainer{
     display:none;
 }
 
-
+/* zone score */
 #scoreZone{
     margin-top:10px;
+    font-size:18px;
 }
 
-
+/* zone du jeu */
 #gameArea{
     width:800px;
     height:300px;
@@ -70,7 +87,13 @@ button{
     background:#eee;
 }
 
+button{
+    padding:10px 20px;
+    font-size:16px;
+    margin:10px;
+}
 
+/* animation apparition */
 .fade{
     animation:fadeIn 0.5s;
 }
@@ -86,12 +109,19 @@ button{
 
 <body>
 
-<!-- PAGE 1 : BIENVENUE -->
+<!-- PAGE BIENVENUE -->
+
 <div id="welcomeScreen">
 
 <div class="welcomeBox">
 
 <h1>Bienvenue dans HARISSA</h1>
+
+<h3>TUNISIAN WORLD HRISSA</h3>
+
+<img src="bienvenue.png" class="welcomeImage">
+
+<br>
 
 <button class="playBtn" onclick="startGame()">Jouer</button>
 
@@ -99,7 +129,8 @@ button{
 
 </div>
 
-<!-- PAGE 2 : JEU -->
+<!-- PAGE DU JEU -->
+
 <div id="gameContainer">
 
 <h1>HARISSA</h1>
@@ -117,9 +148,7 @@ Score : 0 | Score précédent : 0
 
 </div>
 <audio id="startSound" src="musique1.mp3"></audio>
-
 <script>
-
 
 function startGame(){
 
