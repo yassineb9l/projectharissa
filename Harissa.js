@@ -4,8 +4,8 @@
 
 // --- Création du canvas et injection dans #gameArea ---
 const canvas = document.createElement("canvas"); // on crée le canvas en JS
-canvas.width = 800;
-canvas.height = 250;
+canvas.width = 900;
+canvas.height = 400;
 document.getElementById("gameArea").appendChild(canvas); // on l'insère dans la page
 const ctx = canvas.getContext("2d"); // on obtient les outils de dessin 2D
 
@@ -78,14 +78,15 @@ imgObstacle5.src = "Decor5.png";
 // LE JOUEUR
 // ============================================================
 const GRAVITE = 0.6; // force qui tire le joueur vers le bas chaque frame
-const HAUTEUR_NORMAL = 90; // hauteur debout
-const HAUTEUR_ACCROUPI = 45; // hauteur accroupi
-const SOL = 248 - HAUTEUR_NORMAL; // position Y quand le joueur est au sol (= 198)
+const HAUTEUR_NORMAL = 70; // hauteur debout (comme le dino)
+const HAUTEUR_ACCROUPI = 35; // hauteur accroupi
+const SOL_Y = 360; // position Y du sol sur le canvas
+const SOL = SOL_Y - HAUTEUR_NORMAL; // position Y du joueur debout au sol
 
 const joueur = {
   x: 80, // position horizontale (fixe)
   y: SOL, // position verticale (change quand il saute)
-  largeur: 70,
+  largeur: 55,
   hauteur: HAUTEUR_NORMAL,
   velociteY: 0, // vitesse verticale (négative = monte, positive = descend)
   sauts: 0, // 0 = au sol, 1 = saut simple, 2 = double saut utilisé
@@ -102,11 +103,11 @@ let vitesse = 4; // vitesse de déplacement (augmente avec le score)
 
 // Les 5 obstacles possibles — chacun a sa taille et son image
 const TYPES_OBSTACLES = [
-  { largeur: 55, hauteur: 80,  image: imgObstacle1 },
-  { largeur: 65, hauteur: 110, image: imgObstacle2 },
-  { largeur: 75, hauteur: 150, image: imgObstacle3 },
-  { largeur: 60, hauteur: 95,  image: imgObstacle4 },
-  { largeur: 70, hauteur: 130, image: imgObstacle5 },
+  { largeur: 40, hauteur: 70,  image: imgObstacle1 },
+  { largeur: 50, hauteur: 100, image: imgObstacle2 },
+  { largeur: 60, hauteur: 130, image: imgObstacle3 },
+  { largeur: 45, hauteur: 85,  image: imgObstacle4 },
+  { largeur: 55, hauteur: 115, image: imgObstacle5 },
 ];
 
 function creerObstacle() {
@@ -115,7 +116,7 @@ function creerObstacle() {
     TYPES_OBSTACLES[Math.floor(Math.random() * TYPES_OBSTACLES.length)];
   obstacles.push({
     x: canvas.width, // spawn hors écran à droite
-    y: 248 - type.hauteur, // positionné sur le sol
+    y: SOL_Y - type.hauteur, // positionné sur le sol
     largeur: type.largeur,
     hauteur: type.hauteur,
     image: type.image, // image associée à ce type
@@ -178,7 +179,7 @@ document.addEventListener("keydown", (e) => {
     joueur.accroupi = true;
     joueur.hauteur = HAUTEUR_ACCROUPI;
     // On repositionne le joueur pour que ses pieds restent au sol
-    joueur.y = 248 - HAUTEUR_ACCROUPI;
+    joueur.y = SOL_Y - HAUTEUR_ACCROUPI;
   }
 });
 
@@ -187,7 +188,7 @@ document.addEventListener("keyup", (e) => {
   if (e.code === "ArrowDown") {
     joueur.accroupi = false;
     joueur.hauteur = HAUTEUR_NORMAL;
-    joueur.y = 248 - HAUTEUR_NORMAL;
+    joueur.y = SOL_Y - HAUTEUR_NORMAL;
   }
 });
 
@@ -293,7 +294,7 @@ function mettreAJourJoueur() {
   joueur.y += joueur.velociteY;
 
   // Calculer la position Y du sol selon l'état (debout ou accroupi)
-  const solActuel = 248 - joueur.hauteur;
+  const solActuel = SOL_Y - joueur.hauteur;
 
   // Empêcher le joueur de passer sous le sol
   if (joueur.y >= solActuel) {
@@ -310,7 +311,7 @@ function dessiner() {
 
   // Sol (ligne en bas du canvas)
   ctx.fillStyle = "#555";
-  ctx.fillRect(0, 248, canvas.width, 2);
+  ctx.fillRect(0, SOL_Y, canvas.width, 2);
 
   // Joueur : choisir l'image selon l'état
   let imgJoueur;
