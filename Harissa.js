@@ -372,8 +372,7 @@ function restartGame() {
 }
 
 // Connexion des boutons Start et Restart du HTML
-document.addEventListener("DOMContentLoaded", () => {
-  const boutons = document.querySelectorAll("#gameContainer button");
-  boutons[0].addEventListener("click", lancerPartie); // bouton Start
-  boutons[1].addEventListener("click", restartGame); // bouton Restart
-});
+// Le script est en bas du body, le DOM est déjà chargé ici
+const boutons = document.querySelectorAll("#gameContainer button");
+boutons[0].addEventListener("click", lancerPartie); // bouton Start
+boutons[1].addEventListener("click", restartGame); // bouton Restart
