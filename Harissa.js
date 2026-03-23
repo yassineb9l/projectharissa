@@ -78,14 +78,14 @@ imgObstacle5.src = "Decor5.png";
 // LE JOUEUR
 // ============================================================
 const GRAVITE = 0.6; // force qui tire le joueur vers le bas chaque frame
-const HAUTEUR_NORMAL = 50; // hauteur debout
-const HAUTEUR_ACCROUPI = 25; // hauteur accroupi
+const HAUTEUR_NORMAL = 90; // hauteur debout
+const HAUTEUR_ACCROUPI = 45; // hauteur accroupi
 const SOL = 248 - HAUTEUR_NORMAL; // position Y quand le joueur est au sol (= 198)
 
 const joueur = {
   x: 80, // position horizontale (fixe)
   y: SOL, // position verticale (change quand il saute)
-  largeur: 40,
+  largeur: 70,
   hauteur: HAUTEUR_NORMAL,
   velociteY: 0, // vitesse verticale (négative = monte, positive = descend)
   sauts: 0, // 0 = au sol, 1 = saut simple, 2 = double saut utilisé
@@ -102,11 +102,11 @@ let vitesse = 4; // vitesse de déplacement (augmente avec le score)
 
 // Les 5 obstacles possibles — chacun a sa taille et son image
 const TYPES_OBSTACLES = [
-  { largeur: 20, hauteur: 30, image: imgObstacle1 },
-  { largeur: 25, hauteur: 50, image: imgObstacle2 },
-  { largeur: 30, hauteur: 70, image: imgObstacle3 },
-  { largeur: 22, hauteur: 40, image: imgObstacle4 },
-  { largeur: 28, hauteur: 60, image: imgObstacle5 },
+  { largeur: 55, hauteur: 80,  image: imgObstacle1 },
+  { largeur: 65, hauteur: 110, image: imgObstacle2 },
+  { largeur: 75, hauteur: 150, image: imgObstacle3 },
+  { largeur: 60, hauteur: 95,  image: imgObstacle4 },
+  { largeur: 70, hauteur: 130, image: imgObstacle5 },
 ];
 
 function creerObstacle() {
@@ -151,8 +151,8 @@ document.addEventListener("keydown", (e) => {
     return;
   }
 
-  // --- SAUT (Espace) ---
-  if (e.code === "Space") {
+  // --- SAUT (Espace ou Flèche haut) ---
+  if (e.code === "Space" || e.code === "ArrowUp") {
     e.preventDefault(); // évite que la page défile
 
     const maintenant = Date.now(); // heure actuelle en millisecondes
