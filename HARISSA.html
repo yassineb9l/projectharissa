@@ -296,31 +296,6 @@
         }
       }
 
-      /* Ligne de sol qui défile */
-      #gameArea::after {
-        content: "";
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 200%;
-        height: 4px;
-        background: repeating-linear-gradient(
-          90deg,
-          var(--sand-dark) 0 20px,
-          transparent 20px 36px
-        );
-        animation: groundScroll 1s linear infinite;
-        pointer-events: none;
-      }
-
-      @keyframes groundScroll {
-        from {
-          transform: translateX(0);
-        }
-        to {
-          transform: translateX(-50%);
-        }
-      }
 
       /* ── Boutons Start / Restart ──────────────────────────────── */
       button {

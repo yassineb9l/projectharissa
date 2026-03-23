@@ -6,11 +6,15 @@
 const canvas = document.createElement("canvas"); // on crée le canvas en JS
 canvas.width = 900;
 canvas.height = 400;
-document.getElementById("gameArea").appendChild(canvas); // on l'insère dans la page
+const gameArea = document.getElementById("gameArea");
+gameArea.style.width = canvas.width + "px";
+gameArea.style.height = canvas.height + "px";
+gameArea.appendChild(canvas); // on l'insère dans la page
 const ctx = canvas.getContext("2d"); // on obtient les outils de dessin 2D
 
 // --- État global du jeu ---
 let jeuEnCours = false; // true quand la partie est lancée
+let animationId = null; // référence à requestAnimationFrame pour éviter les doublons
 
 // ============================================================
 // SCORE
@@ -47,6 +51,9 @@ function mettreAJourScore() {
   if (frameScore >= 6) {
     score++;
     frameScore = 0;
+    // Mettre à jour la zone de score dans le HTML
+    const scoreZone = document.getElementById("scoreZone");
+    if (scoreZone) scoreZone.textContent = `Score : ${score} | Record : ${record}`;
   }
 
   // Augmenter la vitesse tous les 100 points
@@ -78,15 +85,17 @@ imgObstacle5.src = "Decor5.png";
 // LE JOUEUR
 // ============================================================
 const GRAVITE = 0.6; // force qui tire le joueur vers le bas chaque frame
-const HAUTEUR_NORMAL = 70; // hauteur debout (comme le dino)
-const HAUTEUR_ACCROUPI = 35; // hauteur accroupi
+const HAUTEUR_NORMAL = 125; // hauteur debout
+const LARGEUR_NORMAL = 95; // largeur debout
+const HAUTEUR_ACCROUPI = 62; // hauteur accroupi
+const LARGEUR_ACCROUPI = 150; // largeur accroupi (plus large car étalé)
 const SOL_Y = 360; // position Y du sol sur le canvas
 const SOL = SOL_Y - HAUTEUR_NORMAL; // position Y du joueur debout au sol
 
 const joueur = {
   x: 80, // position horizontale (fixe)
   y: SOL, // position verticale (change quand il saute)
-  largeur: 55,
+  largeur: LARGEUR_NORMAL,
   hauteur: HAUTEUR_NORMAL,
   velociteY: 0, // vitesse verticale (négative = monte, positive = descend)
   sauts: 0, // 0 = au sol, 1 = saut simple, 2 = double saut utilisé
@@ -102,32 +111,41 @@ let frameDepuisDernier = 0; // compteur de frames depuis le dernier obstacle
 let vitesse = 4; // vitesse de déplacement (augmente avec le score)
 
 // Les 5 obstacles possibles — chacun a sa taille et son image
+// margeHitbox = pixels réduits sur chaque bord pour la collision
 const TYPES_OBSTACLES = [
-  { largeur: 40, hauteur: 70,  image: imgObstacle1 },
-  { largeur: 50, hauteur: 100, image: imgObstacle2 },
-  { largeur: 60, hauteur: 130, image: imgObstacle3 },
-  { largeur: 45, hauteur: 85,  image: imgObstacle4 },
-  { largeur: 55, hauteur: 115, image: imgObstacle5 },
+  { largeur: 165, hauteur: 150, offsetSol: 45, margeHitbox: 30, image: imgObstacle1 },
+  { largeur: 205, hauteur: 185, offsetSol: 55, margeHitbox: 35, image: imgObstacle2 },
+  { largeur: 255, hauteur: 230, offsetSol: 70, margeHitbox: 45, image: imgObstacle3 },
+  { largeur: 185, hauteur: 165, offsetSol: 50, margeHitbox: 30, image: imgObstacle4 },
+  { largeur: 230, hauteur: 205, offsetSol: 60, margeHitbox: 35, image: imgObstacle5 },
 ];
 
+
+let dernierTypeObstacle = -1;
+
 function creerObstacle() {
-  // Choisir un type au hasard
-  const type =
-    TYPES_OBSTACLES[Math.floor(Math.random() * TYPES_OBSTACLES.length)];
+  let index;
+  do {
+    index = Math.floor(Math.random() * TYPES_OBSTACLES.length);
+  } while (index === dernierTypeObstacle);
+  dernierTypeObstacle = index;
+
+  const type = TYPES_OBSTACLES[index];
   obstacles.push({
-    x: canvas.width, // spawn hors écran à droite
-    y: SOL_Y - type.hauteur, // positionné sur le sol
+    x: canvas.width,
+    y: SOL_Y - type.hauteur + type.offsetSol,
     largeur: type.largeur,
     hauteur: type.hauteur,
-    image: type.image, // image associée à ce type
+    marge: type.margeHitbox,
+    image: type.image,
   });
 }
 
 function mettreAJourObstacles() {
   frameDepuisDernier++;
 
-  // Spawn un obstacle toutes les 80 frames environ
-  if (frameDepuisDernier >= 80) {
+  // Spawn un obstacle toutes les 140 frames environ
+  if (frameDepuisDernier >= 140) {
     creerObstacle();
     frameDepuisDernier = 0;
   }
@@ -142,34 +160,19 @@ function mettreAJourObstacles() {
 // ============================================================
 // CONTRÔLES CLAVIER
 // ============================================================
-let dernierAppuiEspace = 0; // timestamp du dernier appui sur Espace
-const DELAI_DOUBLE_SAUT = 300; // millisecondes max entre les deux appuis
-
 document.addEventListener("keydown", (e) => {
-  // Rejouer avec Entrée quand le jeu est terminé
-  if (e.code === "Enter" && !jeuEnCours) {
+  // Rejouer avec Entrée ou Espace quand le jeu est terminé
+  if ((e.code === "Enter" || e.code === "Space") && !jeuEnCours) {
     lancerPartie();
     return;
   }
 
-  // --- SAUT (Espace ou Flèche haut) ---
+  // --- SAUT (Espace ou Flèche haut) — saut simple uniquement ---
   if (e.code === "Space" || e.code === "ArrowUp") {
-    e.preventDefault(); // évite que la page défile
-
-    const maintenant = Date.now(); // heure actuelle en millisecondes
-
+    e.preventDefault();
     if (joueur.sauts === 0) {
-      // Premier saut : saut normal
-      joueur.velociteY = -12;
+      joueur.velociteY = -17; // force du saut (négatif = vers le haut)
       joueur.sauts = 1;
-      dernierAppuiEspace = maintenant;
-    } else if (
-      joueur.sauts === 1 &&
-      maintenant - dernierAppuiEspace < DELAI_DOUBLE_SAUT
-    ) {
-      // Double saut : appui rapide → saut plus haut
-      joueur.velociteY = -18;
-      joueur.sauts = 2;
     }
   }
 
@@ -178,8 +181,14 @@ document.addEventListener("keydown", (e) => {
     e.preventDefault();
     joueur.accroupi = true;
     joueur.hauteur = HAUTEUR_ACCROUPI;
-    // On repositionne le joueur pour que ses pieds restent au sol
-    joueur.y = SOL_Y - HAUTEUR_ACCROUPI;
+    joueur.largeur = LARGEUR_ACCROUPI;
+    if (joueur.sauts === 0) {
+      // Au sol : repositionner les pieds
+      joueur.y = SOL_Y - HAUTEUR_ACCROUPI;
+    } else {
+      // En l'air : accélérer la descente sans téléporter
+      joueur.velociteY = Math.max(joueur.velociteY, 10);
+    }
   }
 });
 
@@ -188,27 +197,41 @@ document.addEventListener("keyup", (e) => {
   if (e.code === "ArrowDown") {
     joueur.accroupi = false;
     joueur.hauteur = HAUTEUR_NORMAL;
-    joueur.y = SOL_Y - HAUTEUR_NORMAL;
+    joueur.largeur = LARGEUR_NORMAL;
+    if (joueur.sauts === 0) {
+      joueur.y = SOL_Y - HAUTEUR_NORMAL;
+    }
   }
 });
 
 // ============================================================
 // DÉTECTION DE COLLISION
-// Vérifie si le joueur touche un obstacle (rectangle contre rectangle)
+// Hitboxes réduites séparément pour le joueur et les obstacles
 // ============================================================
+const MARGE_JOUEUR = 15; // marge hitbox joueur
+
 function verifierCollisions() {
   for (const obs of obstacles) {
-    // Les 4 conditions pour que deux rectangles se chevauchent :
-    const toucheHorizontal =
-      joueur.x < obs.x + obs.largeur && joueur.x + joueur.largeur > obs.x;
-    const toucheVertical =
-      joueur.y < obs.y + obs.hauteur && joueur.y + joueur.hauteur > obs.y;
+    // Hitbox réduite du joueur
+    const jx = joueur.x + MARGE_JOUEUR;
+    const jy = joueur.y + MARGE_JOUEUR;
+    const jw = joueur.largeur - MARGE_JOUEUR * 2;
+    const jh = joueur.hauteur - MARGE_JOUEUR * 2;
+
+    // Hitbox réduite par la marge propre à cet obstacle
+    const ox = obs.x + obs.marge;
+    const oy = obs.y + obs.marge;
+    const ow = obs.largeur - obs.marge * 2;
+    const oh = obs.hauteur - obs.marge * 2;
+
+    const toucheHorizontal = jx < ox + ow && jx + jw > ox;
+    const toucheVertical   = jy < oy + oh && jy + jh > oy;
 
     if (toucheHorizontal && toucheVertical) {
-      return true; // collision détectée
+      return true;
     }
   }
-  return false; // aucune collision
+  return false;
 }
 
 // ============================================================
@@ -256,7 +279,7 @@ function gameOver() {
   // Instruction rejouer
   ctx.fillStyle = "#fff";
   ctx.font = "18px Arial";
-  ctx.fillText("Appuie sur Entrée pour rejouer", canvas.width / 2, 210);
+  ctx.fillText("Appuie sur Espace pour rejouer", canvas.width / 2, 210);
 }
 
 // ============================================================
@@ -281,7 +304,7 @@ function gameLoop() {
   dessiner();
 
   // 4. Demander au navigateur d'appeler gameLoop() à la prochaine frame
-  requestAnimationFrame(gameLoop);
+  animationId = requestAnimationFrame(gameLoop);
 }
 
 // ============================================================
@@ -309,7 +332,16 @@ function dessiner() {
   // Effacer tout le canvas avant de redessiner
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Sol (ligne en bas du canvas)
+  // Obstacles dessinés en premier (sous le sol)
+  for (const obs of obstacles) {
+    ctx.drawImage(obs.image, obs.x, obs.y, obs.largeur, obs.hauteur);
+  }
+
+  // Couvrir la zone sous le sol pour cacher les transparents des images
+  ctx.fillStyle = "#eeeeee"; // même couleur que le fond du gameArea
+  ctx.fillRect(0, SOL_Y + 2, canvas.width, canvas.height - SOL_Y);
+
+  // Sol (ligne de séparation)
   ctx.fillStyle = "#555";
   ctx.fillRect(0, SOL_Y, canvas.width, 2);
 
@@ -320,26 +352,6 @@ function dessiner() {
   else imgJoueur = imgJoueurDebout;
 
   ctx.drawImage(imgJoueur, joueur.x, joueur.y, joueur.largeur, joueur.hauteur);
-
-  // Obstacles — chacun utilise sa propre image
-  for (const obs of obstacles) {
-    ctx.drawImage(obs.image, obs.x, obs.y, obs.largeur, obs.hauteur);
-  }
-
-  // Affichage du score en haut à droite
-  ctx.fillStyle = "#222";
-  ctx.font = "bold 18px Arial";
-  ctx.textAlign = "right";
-  ctx.fillText(`Score : ${score}`, canvas.width - 10, 25);
-  ctx.fillText(`Record : ${record}`, canvas.width - 10, 48);
-
-  // Médaille en cours (si seuil atteint)
-  const medaille = obtenirMedaille(score);
-  if (medaille) {
-    ctx.fillStyle = medaille.couleur;
-    ctx.font = "bold 16px Arial";
-    ctx.fillText(medaille.label, canvas.width - 10, 71);
-  }
 }
 
 // ============================================================
@@ -361,8 +373,10 @@ function lancerPartie() {
   joueur.mort = false;
   joueur.hauteur = HAUTEUR_NORMAL;
 
+  // Annuler toute boucle existante pour éviter les doublons
+  if (animationId) cancelAnimationFrame(animationId);
   jeuEnCours = true;
-  requestAnimationFrame(gameLoop);
+  animationId = requestAnimationFrame(gameLoop);
 }
 
 // ============================================================
