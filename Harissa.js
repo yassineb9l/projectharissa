@@ -56,9 +56,9 @@ function mettreAJourScore() {
 const imgJoueurDebout = new Image();
 imgJoueurDebout.src = "Cours.gif"; // joueur qui court (et saute)
 const imgJoueurAccroupi = new Image();
-imgJoueurAccroupi.src = "images/joueur_accroupi.png"; // ← à remplacer
+imgJoueurAccroupi.src = "Accroupi.png";
 const imgJoueurMort = new Image();
-imgJoueurMort.src = "images/joueur_mort.png"; // ← à remplacer
+imgJoueurMort.src = "Mort.png";
 // 5 obstacles — images Decor
 const imgObstacle1 = new Image();
 imgObstacle1.src = "Decor1.png";
