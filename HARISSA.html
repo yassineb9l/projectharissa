@@ -275,15 +275,7 @@
 
       /* Soleil dans le coin */
       #gameArea::before {
-        content: "☀";
-        position: absolute;
-        top: 14px;
-        right: 24px;
-        font-size: 34px;
-        filter: drop-shadow(0 0 8px #ffd700);
-        animation: sunPulse 3s ease-in-out infinite;
-        pointer-events: none;
-        z-index: 1;
+        content: none;
       }
 
       @keyframes sunPulse {
@@ -295,6 +287,7 @@
           transform: scale(1.1);
         }
       }
+
 
 
       /* ── Boutons Start / Restart ──────────────────────────────── */
@@ -486,22 +479,21 @@
     <!-- PAGE BIENVENUE -->
     <div id="welcomeScreen">
       <div class="welcomeBox">
-        <h1>Bienvenue dans HARISSA</h1>
-        <h3>TUNISIAN WORLD HRISSA</h3>
+        <h1>Welcome to HARISSA JUMP</h1>
         <img src="Bienvenue.png" class="welcomeImage" />
         <br />
-        <button class="playBtn" onclick="startGame()">Jouer</button>
+        <button class="playBtn" onclick="startGame()">Play</button>
       </div>
     </div>
 
     <!-- PAGE DU JEU -->
     <div id="gameContainer">
-      <h1>HARISSA</h1>
+      <h1>HARISSA JUMP</h1>
       <div id="scoreZone">Score : 0 | Score précédent : 0</div>
       <div id="gameArea"></div>
       <div>
-        <button>Start</button>
-        <button>Restart</button>
+        <button onclick="lancerPartie()">Play</button>
+        <button onclick="togglePause()">Pause</button>
       </div>
     </div>
 

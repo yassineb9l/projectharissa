@@ -3,17 +3,25 @@
 // ============================================================
 
 // --- Création du canvas et injection dans #gameArea ---
-const canvas = document.createElement("canvas"); // on crée le canvas en JS
+const canvas = document.createElement("canvas");
 canvas.width = 900;
 canvas.height = 400;
 const gameArea = document.getElementById("gameArea");
 gameArea.style.width = canvas.width + "px";
 gameArea.style.height = canvas.height + "px";
-gameArea.appendChild(canvas); // on l'insère dans la page
-const ctx = canvas.getContext("2d"); // on obtient les outils de dessin 2D
+gameArea.appendChild(canvas);
+const ctx = canvas.getContext("2d");
 
 // --- État global du jeu ---
-let jeuEnCours = false; // true quand la partie est lancée
+let jeuEnCours = false;
+let enPause = false;
+let debugHitbox = false; // appuie sur D pour voir les hitboxes
+
+function togglePause() {
+  if (!jeuEnCours) return; // ne rien faire si aucune partie en cours
+  enPause = !enPause;
+  if (!enPause) requestAnimationFrame(gameLoop); // reprendre la boucle
+}
 let animationId = null; // référence à requestAnimationFrame pour éviter les doublons
 
 // ============================================================
@@ -24,15 +32,39 @@ let score = 0;
 let record = parseInt(localStorage.getItem("harissaRecord")) || 0;
 
 // Seuils des médailles — modifie ces valeurs pour ajuster la difficulté
-const SEUIL_BRONZE = 200;
-const SEUIL_ARGENT = 600;
-const SEUIL_OR = 1200;
+const SEUIL_BRONZE = 100;
+const SEUIL_ARGENT = 200;
+const SEUIL_OR = 300;
 
 const MEDAILLES = [
   { seuil: SEUIL_OR, label: "🥇 Or", couleur: "#f1c40f" },
   { seuil: SEUIL_ARGENT, label: "🥈 Argent", couleur: "#bdc3c7" },
   { seuil: SEUIL_BRONZE, label: "🥉 Bronze", couleur: "#e67e22" },
 ];
+
+// Met à jour les slots médailles dans le DOM
+/* MEDAILLES_DOM — décommenter quand les slots HTML seront ajoutés
+function mettreAJourMedailles() {
+  const config = [
+    { id: "slot-bronze", seuil: SEUIL_BRONZE },
+    { id: "slot-argent", seuil: SEUIL_ARGENT },
+    { id: "slot-or", seuil: SEUIL_OR },
+  ];
+  config.forEach(({ id, seuil }) => {
+    const img = document.querySelector(`#${id} img`);
+    if (img) img.style.display = score >= seuil ? "block" : "none";
+  });
+}
+
+function reinitialiserMedailles() {
+  ["slot-bronze", "slot-argent", "slot-or"].forEach((id) => {
+    const img = document.querySelector(`#${id} img`);
+    if (img) img.style.display = "none";
+  });
+}
+*/
+function mettreAJourMedailles() {}
+function reinitialiserMedailles() {}
 
 // Retourne la médaille actuelle ou null
 function obtenirMedaille(s) {
@@ -53,18 +85,23 @@ function mettreAJourScore() {
     frameScore = 0;
     // Mettre à jour la zone de score dans le HTML
     const scoreZone = document.getElementById("scoreZone");
-    if (scoreZone) scoreZone.textContent = `Score : ${score} | Record : ${record}`;
+    if (scoreZone)
+      scoreZone.textContent = `Score : ${score} | Record : ${record}`;
+    mettreAJourMedailles();
   }
 
   // Augmenter la vitesse tous les 100 points
-  vitesse = 4 + Math.floor(score / 100) * 0.5;
+  vitesse = 6 + Math.floor(score / 100) * 0.5;
 }
 
 // ============================================================
 // IMAGES — remplace les chemins par tes vrais fichiers
 // ============================================================
-const imgJoueurDebout = new Image();
-imgJoueurDebout.src = "Cours.gif"; // joueur qui court (et saute)
+const imgCours1 = new Image();
+imgCours1.src = "Cours1.png";
+const imgCours2 = new Image();
+imgCours2.src = "Cours2.png";
+let frameCourse = 0; // compteur pour alterner les images de course
 const imgJoueurAccroupi = new Image();
 imgJoueurAccroupi.src = "Accroupi.png";
 const imgJoueurMort = new Image();
@@ -80,6 +117,29 @@ const imgObstacle4 = new Image();
 imgObstacle4.src = "Decor4.png";
 const imgObstacle5 = new Image();
 imgObstacle5.src = "Decor5.png";
+// Obstacles volants et cactus
+const imgCactus = new Image();
+imgCactus.src = "Decor6.png";
+const imgVolant2 = new Image();
+imgVolant2.src = "Decor_volant2.png";
+// Fonds défilants (jour et nuit)
+const imgFond = new Image();
+imgFond.src = "Fond.png";
+const imgFondNuit = new Image();
+imgFondNuit.src = "Fond2.png";
+let modeNuit = false;
+
+// Bouton toggle lumière en haut à droite du rectangle de jeu
+const btnLumiere = document.createElement("button");
+btnLumiere.textContent = "☀️";
+btnLumiere.style.cssText =
+  "position:absolute; top:10px; right:10px; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.6); border-radius:50%; width:40px; height:40px; font-size:20px; cursor:pointer; z-index:10; display:flex; align-items:center; justify-content:center; line-height:1;";
+btnLumiere.tabIndex = -1; // empêche le bouton de recevoir le focus clavier
+btnLumiere.addEventListener("click", () => {
+  modeNuit = !modeNuit;
+});
+gameArea.style.position = "relative";
+gameArea.appendChild(btnLumiere);
 
 // ============================================================
 // LE JOUEUR
@@ -87,9 +147,9 @@ imgObstacle5.src = "Decor5.png";
 const GRAVITE = 0.6; // force qui tire le joueur vers le bas chaque frame
 const HAUTEUR_NORMAL = 125; // hauteur debout
 const LARGEUR_NORMAL = 95; // largeur debout
-const HAUTEUR_ACCROUPI = 62; // hauteur accroupi
-const LARGEUR_ACCROUPI = 150; // largeur accroupi (plus large car étalé)
-const SOL_Y = 360; // position Y du sol sur le canvas
+const HAUTEUR_ACCROUPI = 72; // hauteur accroupi
+const LARGEUR_ACCROUPI = 165; // largeur accroupi (plus large car étalé)
+const SOL_Y = 400; // joueur court sur la bordure basse du rectangle
 const SOL = SOL_Y - HAUTEUR_NORMAL; // position Y du joueur debout au sol
 
 const joueur = {
@@ -98,7 +158,7 @@ const joueur = {
   largeur: LARGEUR_NORMAL,
   hauteur: HAUTEUR_NORMAL,
   velociteY: 0, // vitesse verticale (négative = monte, positive = descend)
-  sauts: 0, // 0 = au sol, 1 = saut simple, 2 = double saut utilisé
+  sauts: 0, // 0 = au sol, 1 = en l'air
   accroupi: false,
   mort: false,
 };
@@ -108,18 +168,76 @@ const joueur = {
 // ============================================================
 let obstacles = []; // liste de tous les obstacles actifs
 let frameDepuisDernier = 0; // compteur de frames depuis le dernier obstacle
-let vitesse = 4; // vitesse de déplacement (augmente avec le score)
+let vitesse = 6; // vitesse de déplacement (augmente avec le score)
+let xFond = 0; // position X du fond défilant
 
-// Les 5 obstacles possibles — chacun a sa taille et son image
-// margeHitbox = pixels réduits sur chaque bord pour la collision
+// ============================================================
+// HITBOXES — modifie ces constantes pour ajuster chaque obstacle
+// gauche/droite/haut/bas = pixels retirés de chaque côté
+// ============================================================
+const HB_DECOR1 = { gauche: 30, droite: 30, haut: 30, bas: 30 };
+const HB_DECOR2 = { gauche: 35, droite: 35, haut: 75, bas: 35 }; // haut = marge + decalageHaut
+const HB_DECOR3 = { gauche: 45, droite: 45, haut: 70, bas: 45 };
+const HB_DECOR4 = { gauche: 35, droite: 70, haut: 30, bas: 30 };
+const HB_DECOR5 = { gauche: 52, droite: 65, haut: 35, bas: 35 };
+const HB_CACTUS = { gauche: 27, droite: 27, haut: 32, bas: 20 };
+const HB_OISEAU = { gauche: 25, droite: 25, haut: 25, bas: 25 };
+
+// Les obstacles possibles — chacun a sa taille et son image
 const TYPES_OBSTACLES = [
-  { largeur: 165, hauteur: 150, offsetSol: 45, margeHitbox: 30, image: imgObstacle1 },
-  { largeur: 205, hauteur: 185, offsetSol: 55, margeHitbox: 35, image: imgObstacle2 },
-  { largeur: 255, hauteur: 230, offsetSol: 70, margeHitbox: 45, image: imgObstacle3 },
-  { largeur: 185, hauteur: 165, offsetSol: 50, margeHitbox: 30, image: imgObstacle4 },
-  { largeur: 230, hauteur: 205, offsetSol: 60, margeHitbox: 35, image: imgObstacle5 },
+  {
+    largeur: 185,
+    hauteur: 168,
+    offsetSol: 40,
+    hb: HB_DECOR1,
+    image: imgObstacle1,
+  },
+  {
+    largeur: 205,
+    hauteur: 185,
+    offsetSol: 53,
+    hb: HB_DECOR2,
+    image: imgObstacle2,
+  },
+  {
+    largeur: 255,
+    hauteur: 230,
+    offsetSol: 63,
+    hb: HB_DECOR3,
+    image: imgObstacle3,
+  },
+  {
+    largeur: 185,
+    hauteur: 165,
+    offsetSol: 28,
+    hb: HB_DECOR4,
+    image: imgObstacle4,
+  },
+  {
+    largeur: 230,
+    hauteur: 205,
+    offsetSol: 55,
+    hb: HB_DECOR5,
+    image: imgObstacle5,
+  },
+  // Cactus
+  {
+    largeur: 110,
+    hauteur: 190,
+    offsetSol: 50,
+    hb: HB_CACTUS,
+    image: imgCactus,
+    estCactus: true,
+  },
+  // Oiseau volant
+  {
+    largeur: 180,
+    hauteur: 110,
+    yFixe: 245,
+    hb: HB_OISEAU,
+    image: imgVolant2,
+  },
 ];
-
 
 let dernierTypeObstacle = -1;
 
@@ -131,14 +249,37 @@ function creerObstacle() {
   dernierTypeObstacle = index;
 
   const type = TYPES_OBSTACLES[index];
-  obstacles.push({
-    x: canvas.width,
-    y: SOL_Y - type.hauteur + type.offsetSol,
-    largeur: type.largeur,
-    hauteur: type.hauteur,
-    marge: type.margeHitbox,
-    image: type.image,
-  });
+  const y =
+    type.yFixe !== undefined
+      ? type.yFixe
+      : SOL_Y - type.hauteur + (type.offsetSol || 0);
+
+  if (type.estCactus) {
+    // 1, 2 ou 3 cactus — le groupe part ensemble du bord droit
+    const nb = Math.floor(Math.random() * 2) + 1;
+    const gap = 4;
+    // xBase : le premier cactus du groupe commence à canvas.width
+    // les suivants sont placés à gauche du premier (déjà hors écran)
+    for (let i = 0; i < nb; i++) {
+      obstacles.push({
+        x: canvas.width + i * (type.largeur + gap),
+        y,
+        largeur: type.largeur,
+        hauteur: type.hauteur,
+        hb: type.hb,
+        image: type.image,
+      });
+    }
+  } else {
+    obstacles.push({
+      x: canvas.width,
+      y,
+      largeur: type.largeur,
+      hauteur: type.hauteur,
+      hb: type.hb,
+      image: type.image,
+    });
+  }
 }
 
 function mettreAJourObstacles() {
@@ -161,8 +302,14 @@ function mettreAJourObstacles() {
 // CONTRÔLES CLAVIER
 // ============================================================
 document.addEventListener("keydown", (e) => {
+  if (e.code === "KeyD") {
+    debugHitbox = !debugHitbox;
+    return;
+  }
+
   // Rejouer avec Entrée ou Espace quand le jeu est terminé
   if ((e.code === "Enter" || e.code === "Space") && !jeuEnCours) {
+    e.preventDefault();
     lancerPartie();
     return;
   }
@@ -218,14 +365,14 @@ function verifierCollisions() {
     const jw = joueur.largeur - MARGE_JOUEUR * 2;
     const jh = joueur.hauteur - MARGE_JOUEUR * 2;
 
-    // Hitbox réduite par la marge propre à cet obstacle
-    const ox = obs.x + obs.marge;
-    const oy = obs.y + obs.marge;
-    const ow = obs.largeur - obs.marge * 2;
-    const oh = obs.hauteur - obs.marge * 2;
+    // Hitbox réduite par les constantes propres à cet obstacle
+    const ox = obs.x + obs.hb.gauche;
+    const oy = obs.y + obs.hb.haut;
+    const ow = obs.largeur - obs.hb.gauche - obs.hb.droite;
+    const oh = obs.hauteur - obs.hb.haut - obs.hb.bas;
 
     const toucheHorizontal = jx < ox + ow && jx + jw > ox;
-    const toucheVertical   = jy < oy + oh && jy + jh > oy;
+    const toucheVertical = jy < oy + oh && jy + jh > oy;
 
     if (toucheHorizontal && toucheVertical) {
       return true;
@@ -269,12 +416,14 @@ function gameOver() {
   );
 
   // Médaille obtenue
+  /* MEDAILLES_CANVAS — décommenter avec les slots DOM
   const medaille = obtenirMedaille(score);
   if (medaille) {
     ctx.fillStyle = medaille.couleur;
     ctx.font = "bold 22px Arial";
     ctx.fillText(medaille.label, canvas.width / 2, 165);
   }
+  */
 
   // Instruction rejouer
   ctx.fillStyle = "#fff";
@@ -287,7 +436,8 @@ function gameOver() {
 // Appelée ~60 fois par seconde par le navigateur
 // ============================================================
 function gameLoop() {
-  if (!jeuEnCours) return; // on sort si le jeu est en pause ou game over
+  if (!jeuEnCours) return;
+  if (enPause) return; // boucle suspendue, reprendra via togglePause()
 
   // 1. Mettre à jour la logique
   mettreAJourJoueur();
@@ -332,38 +482,76 @@ function dessiner() {
   // Effacer tout le canvas avant de redessiner
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Obstacles dessinés en premier (sous le sol)
+  // Fond défilant : deux copies côte à côte pour la boucle infinie
+  xFond -= vitesse * 0.4;
+  if (xFond <= -canvas.width) xFond = 0;
+  const fondActuel = modeNuit ? imgFondNuit : imgFond;
+  ctx.drawImage(fondActuel, xFond, 0, canvas.width, canvas.height);
+  ctx.drawImage(
+    fondActuel,
+    xFond + canvas.width,
+    0,
+    canvas.width,
+    canvas.height,
+  );
+
+  // Obstacles
   for (const obs of obstacles) {
     ctx.drawImage(obs.image, obs.x, obs.y, obs.largeur, obs.hauteur);
   }
 
-  // Couvrir la zone sous le sol pour cacher les transparents des images
-  ctx.fillStyle = "#eeeeee"; // même couleur que le fond du gameArea
-  ctx.fillRect(0, SOL_Y + 2, canvas.width, canvas.height - SOL_Y);
-
-  // Sol (ligne de séparation)
-  ctx.fillStyle = "#555";
-  ctx.fillRect(0, SOL_Y, canvas.width, 2);
-
   // Joueur : choisir l'image selon l'état
   let imgJoueur;
-  if (joueur.mort) imgJoueur = imgJoueurMort;
-  else if (joueur.accroupi) imgJoueur = imgJoueurAccroupi;
-  else imgJoueur = imgJoueurDebout;
+  if (joueur.mort) {
+    imgJoueur = imgJoueurMort;
+  } else if (joueur.accroupi) {
+    imgJoueur = imgJoueurAccroupi;
+  } else {
+    // Alterner Cours1 et Cours2 toutes les 8 frames
+    frameCourse++;
+    imgJoueur = Math.floor(frameCourse / 8) % 2 === 0 ? imgCours1 : imgCours2;
+  }
 
   ctx.drawImage(imgJoueur, joueur.x, joueur.y, joueur.largeur, joueur.hauteur);
+
+  // MODE DEBUG — affiche les hitboxes en rouge/bleu
+  if (debugHitbox) {
+    const mj = 15; // marge joueur
+    ctx.strokeStyle = "blue";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(
+      joueur.x + mj,
+      joueur.y + mj,
+      joueur.largeur - mj * 2,
+      joueur.hauteur - mj * 2,
+    );
+
+    for (const obs of obstacles) {
+      ctx.strokeStyle = "red";
+      ctx.strokeRect(
+        obs.x + obs.hb.gauche,
+        obs.y + obs.hb.haut,
+        obs.largeur - obs.hb.gauche - obs.hb.droite,
+        obs.hauteur - obs.hb.haut - obs.hb.bas,
+      );
+    }
+  }
 }
 
 // ============================================================
 // DÉMARRER LE JEU
 // ============================================================
 function lancerPartie() {
+  if (jeuEnCours) return;
+  enPause = false;
+  reinitialiserMedailles();
   // Réinitialiser le score, les obstacles et la vitesse
   score = 0;
   frameScore = 0;
   obstacles = [];
   frameDepuisDernier = 0;
-  vitesse = 4;
+  vitesse = 6;
+  xFond = 0;
 
   // Réinitialiser le joueur
   joueur.y = SOL;
@@ -372,6 +560,8 @@ function lancerPartie() {
   joueur.accroupi = false;
   joueur.mort = false;
   joueur.hauteur = HAUTEUR_NORMAL;
+  joueur.largeur = LARGEUR_NORMAL;
+  frameCourse = 0;
 
   // Annuler toute boucle existante pour éviter les doublons
   if (animationId) cancelAnimationFrame(animationId);
@@ -379,15 +569,6 @@ function lancerPartie() {
   animationId = requestAnimationFrame(gameLoop);
 }
 
-// ============================================================
-// REDÉMARRER LE JEU
-// ============================================================
-function restartGame() {
-  lancerPartie();
-}
-
-// Connexion des boutons Start et Restart du HTML
-// Le script est en bas du body, le DOM est déjà chargé ici
+// Connexion du bouton Play (le bouton Pause a déjà onclick="togglePause()" dans le HTML)
 const boutons = document.querySelectorAll("#gameContainer button");
-boutons[0].addEventListener("click", lancerPartie); // bouton Start
-boutons[1].addEventListener("click", restartGame); // bouton Restart
+boutons[0].addEventListener("click", lancerPartie);
