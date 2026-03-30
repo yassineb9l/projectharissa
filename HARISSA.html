@@ -497,18 +497,23 @@
 
     <script>
       // Ajoute tes fichiers ici pour les inclure dans la rotation aléatoire
-      const MUSIQUES = ["musique1.mp3", "musique2.mp3", "musique3.mp3", "musique4.mp3"];
+      const MUSIQUE_ACCUEIL = "musique1.mp3";
+      const MUSIQUES_JEU = ["musique2.mp3", "musique3.mp3", "musique4.mp3"];
+      let indexMusique = 0;
 
       function jouerMusiqueAleatoire() {
         const musique = document.getElementById("musiqueJeu");
-        const src = MUSIQUES[Math.floor(Math.random() * MUSIQUES.length)];
-        musique.src = src;
+        musique.src = MUSIQUES_JEU[indexMusique % MUSIQUES_JEU.length];
+        indexMusique++;
         musique.currentTime = 0;
         musique.play();
       }
 
       function startGame() {
-        jouerMusiqueAleatoire();
+        const musique = document.getElementById("musiqueJeu");
+        musique.src = MUSIQUE_ACCUEIL;
+        musique.currentTime = 0;
+        musique.play();
         document.getElementById("welcomeScreen").style.display = "none";
         let game = document.getElementById("gameContainer");
         game.style.display = "block";
