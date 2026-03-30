@@ -16,25 +16,30 @@ const ctx = canvas.getContext("2d");
 let jeuEnCours = false;
 let enPause = false;
 let debugHitbox = false; // appuie sur D pour voir les hitboxes
+let peutRejouer = false; // évite de relancer si Espace est maintenu à la mort
+let spaceDown = false; // suit l'état de la touche Espace en temps réel
 
 function togglePause() {
-  if (!jeuEnCours) return; // ne rien faire si aucune partie en cours
+  if (!jeuEnCours) return;
   enPause = !enPause;
-  if (!enPause) requestAnimationFrame(gameLoop); // reprendre la boucle
+  btnPause.textContent = enPause ? "▶" : "⏸";
+  if (!enPause) requestAnimationFrame(gameLoop);
 }
 let animationId = null; // référence à requestAnimationFrame pour éviter les doublons
+let lastTime = 0; // timestamp de la dernière frame pour le delta time
 
 // ============================================================
 // SCORE
 // ============================================================
 let score = 0;
 // localStorage : mémoire persistante du navigateur, survit aux rechargements
-let record = parseInt(localStorage.getItem("harissaRecord")) || 0;
+let record = 0;
+let medaillesDebloquees = { bronze: false, argent: false, or: false };
 
 // Seuils des médailles — modifie ces valeurs pour ajuster la difficulté
-const SEUIL_BRONZE = 100;
-const SEUIL_ARGENT = 200;
-const SEUIL_OR = 300;
+const SEUIL_BRONZE = 300;
+const SEUIL_ARGENT = 600;
+const SEUIL_OR = 1000;
 
 const MEDAILLES = [
   { seuil: SEUIL_OR, label: "🥇 Or", couleur: "#f1c40f" },
@@ -43,28 +48,36 @@ const MEDAILLES = [
 ];
 
 // Met à jour les slots médailles dans le DOM
-/* MEDAILLES_DOM — décommenter quand les slots HTML seront ajoutés
 function mettreAJourMedailles() {
   const config = [
-    { id: "slot-bronze", seuil: SEUIL_BRONZE },
-    { id: "slot-argent", seuil: SEUIL_ARGENT },
-    { id: "slot-or", seuil: SEUIL_OR },
+    { id: "slot-bronze", seuil: SEUIL_BRONZE, cle: "bronze" },
+    { id: "slot-argent", seuil: SEUIL_ARGENT, cle: "argent" },
+    { id: "slot-or", seuil: SEUIL_OR, cle: "or" },
   ];
-  config.forEach(({ id, seuil }) => {
-    const img = document.querySelector(`#${id} img`);
-    if (img) img.style.display = score >= seuil ? "block" : "none";
+  config.forEach(({ id, seuil, cle }) => {
+    const slot = document.getElementById(id);
+    const gagnee = score >= seuil || medaillesDebloquees[cle];
+    if (slot) slot.style.opacity = gagnee ? "1" : "0.4";
   });
 }
 
 function reinitialiserMedailles() {
-  ["slot-bronze", "slot-argent", "slot-or"].forEach((id) => {
-    const img = document.querySelector(`#${id} img`);
-    if (img) img.style.display = "none";
+  const config = [
+    { id: "slot-bronze", cle: "bronze" },
+    { id: "slot-argent", cle: "argent" },
+    { id: "slot-or", cle: "or" },
+  ];
+  config.forEach(({ id, cle }) => {
+    const slot = document.getElementById(id);
+    if (slot) slot.style.opacity = medaillesDebloquees[cle] ? "1" : "0.4";
   });
 }
-*/
-function mettreAJourMedailles() {}
-function reinitialiserMedailles() {}
+
+function sauvegarderMedailles() {
+  if (score >= SEUIL_BRONZE) medaillesDebloquees.bronze = true;
+  if (score >= SEUIL_ARGENT) medaillesDebloquees.argent = true;
+  if (score >= SEUIL_OR) medaillesDebloquees.or = true;
+}
 
 // Retourne la médaille actuelle ou null
 function obtenirMedaille(s) {
@@ -76,22 +89,20 @@ function obtenirMedaille(s) {
 
 let frameScore = 0; // compteur interne pour le rythme du score
 
-function mettreAJourScore() {
-  frameScore++;
+function mettreAJourScore(dt) {
+  frameScore += dt;
 
   // +1 point toutes les 6 frames, comme le Dino Chrome (~10 pts/seconde)
   if (frameScore >= 6) {
     score++;
     frameScore = 0;
     // Mettre à jour la zone de score dans le HTML
-    const scoreZone = document.getElementById("scoreZone");
-    if (scoreZone)
-      scoreZone.textContent = `Score : ${score} | Record : ${record}`;
+    scoreZone.textContent = `Score : ${score} | Record : ${record}`;
     mettreAJourMedailles();
   }
 
   // Augmenter la vitesse tous les 100 points
-  vitesse = 6 + Math.floor(score / 100) * 0.5;
+  vitesse = 7.62 * Math.pow(1.1, Math.floor(score / 200));
 }
 
 // ============================================================
@@ -137,9 +148,60 @@ btnLumiere.style.cssText =
 btnLumiere.tabIndex = -1; // empêche le bouton de recevoir le focus clavier
 btnLumiere.addEventListener("click", () => {
   modeNuit = !modeNuit;
+  if (enPause) dessiner();
+  if (!jeuEnCours && joueur.mort) gameOver();
 });
 gameArea.style.position = "relative";
 gameArea.appendChild(btnLumiere);
+
+const btnMusique = document.createElement("button");
+btnMusique.textContent = "🔊";
+btnMusique.style.cssText =
+  "position:absolute; top:55px; right:10px; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.6); border-radius:50%; width:40px; height:40px; font-size:20px; cursor:pointer; z-index:10; display:flex; align-items:center; justify-content:center; line-height:1;";
+btnMusique.tabIndex = -1;
+btnMusique.addEventListener("click", () => {
+  const musique = document.getElementById("musiqueJeu");
+  if (musique.paused) {
+    musique.play();
+    btnMusique.textContent = "🔊";
+  } else {
+    musique.pause();
+    btnMusique.textContent = "🔇";
+  }
+});
+gameArea.appendChild(btnMusique);
+
+const btnPause = document.createElement("button");
+btnPause.textContent = "⏸";
+btnPause.style.cssText =
+  "position:absolute; top:10px; left:10px; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.6); border-radius:50%; width:40px; height:40px; font-size:20px; cursor:pointer; z-index:10; display:flex; align-items:center; justify-content:center; line-height:1;";
+btnPause.tabIndex = -1;
+btnPause.addEventListener("click", togglePause);
+gameArea.appendChild(btnPause);
+
+// Slots médailles — ligne à droite du score
+const medalContainer = document.createElement("div");
+medalContainer.style.cssText =
+  "display:inline-flex; align-items:center; gap:6px; vertical-align:middle; margin-left:16px;";
+const scoreZone = document.getElementById("scoreZone");
+scoreZone.insertAdjacentElement("afterend", medalContainer);
+
+const SLOTS_MEDAILLES = [
+  { id: "slot-bronze", src: "medaille bronze.png" },
+  { id: "slot-argent", src: "medaille argent.png" },
+  { id: "slot-or", src: "medaille or.png" },
+];
+SLOTS_MEDAILLES.forEach(({ id, src }) => {
+  const slot = document.createElement("div");
+  slot.id = id;
+  slot.style.cssText = "display:inline-block; opacity:0.3;";
+  const img = document.createElement("img");
+  img.src = src;
+  img.style.cssText =
+    "width:121px; height:121px; object-fit:contain; display:block;";
+  slot.appendChild(img);
+  medalContainer.appendChild(slot);
+});
 
 // ============================================================
 // LE JOUEUR
@@ -167,7 +229,7 @@ const joueur = {
 // OBSTACLES
 // ============================================================
 let obstacles = []; // liste de tous les obstacles actifs
-let frameDepuisDernier = 0; // compteur de frames depuis le dernier obstacle
+let pixelsDepuisDernier = 0; // pixels parcourus depuis le dernier obstacle
 let vitesse = 6; // vitesse de déplacement (augmente avec le score)
 let xFond = 0; // position X du fond défilant
 
@@ -186,37 +248,37 @@ const HB_OISEAU = { gauche: 25, droite: 25, haut: 25, bas: 25 };
 // Les obstacles possibles — chacun a sa taille et son image
 const TYPES_OBSTACLES = [
   {
-    largeur: 185,
-    hauteur: 168,
+    largeur: 204,
+    hauteur: 185,
     offsetSol: 40,
     hb: HB_DECOR1,
     image: imgObstacle1,
   },
   {
-    largeur: 205,
-    hauteur: 185,
-    offsetSol: 53,
+    largeur: 226,
+    hauteur: 204,
+    offsetSol: 61,
     hb: HB_DECOR2,
     image: imgObstacle2,
   },
   {
     largeur: 255,
     hauteur: 230,
-    offsetSol: 63,
+    offsetSol: 67,
     hb: HB_DECOR3,
     image: imgObstacle3,
   },
   {
-    largeur: 185,
-    hauteur: 165,
-    offsetSol: 28,
+    largeur: 204,
+    hauteur: 182,
+    offsetSol: 30,
     hb: HB_DECOR4,
     image: imgObstacle4,
   },
   {
-    largeur: 230,
-    hauteur: 205,
-    offsetSol: 55,
+    largeur: 253,
+    hauteur: 226,
+    offsetSol: 62,
     hb: HB_DECOR5,
     image: imgObstacle5,
   },
@@ -229,35 +291,50 @@ const TYPES_OBSTACLES = [
     image: imgCactus,
     estCactus: true,
   },
-  // Oiseau volant
+  // Oiseau volant (yFixe choisi aléatoirement dans creerObstacle)
   {
     largeur: 180,
     hauteur: 110,
-    yFixe: 245,
+    yFixe: [245, 207], // bas (sauter par-dessus) ou haut (passer dessous)
     hb: HB_OISEAU,
     image: imgVolant2,
+    estOiseau: true,
   },
 ];
 
 let dernierTypeObstacle = -1;
 
+// Pool pondéré : l'oiseau a 30% de chances en plus que les autres
+const POOL_OBSTACLES = (() => {
+  const pool = [];
+  TYPES_OBSTACLES.forEach((_, i) => {
+    const nb = TYPES_OBSTACLES[i].estOiseau ? 13 : 10;
+    for (let k = 0; k < nb; k++) pool.push(i);
+  });
+  return pool;
+})();
+
 function creerObstacle() {
   let index;
   do {
-    index = Math.floor(Math.random() * TYPES_OBSTACLES.length);
+    index = POOL_OBSTACLES[Math.floor(Math.random() * POOL_OBSTACLES.length)];
   } while (index === dernierTypeObstacle);
   dernierTypeObstacle = index;
 
   const type = TYPES_OBSTACLES[index];
+  // Si yFixe est un tableau, choisir aléatoirement parmi les hauteurs
+  const yFixeChoisi = Array.isArray(type.yFixe)
+    ? type.yFixe[Math.floor(Math.random() * type.yFixe.length)]
+    : type.yFixe;
   const y =
-    type.yFixe !== undefined
-      ? type.yFixe
+    yFixeChoisi !== undefined
+      ? yFixeChoisi
       : SOL_Y - type.hauteur + (type.offsetSol || 0);
 
   if (type.estCactus) {
     // 1, 2 ou 3 cactus — le groupe part ensemble du bord droit
-    const nb = Math.floor(Math.random() * 2) + 1;
-    const gap = 4;
+    const nb = Math.floor(Math.random() * 3) + 1;
+    const gap = -20; // négatif = chevauchement, groupe compact
     // xBase : le premier cactus du groupe commence à canvas.width
     // les suivants sont placés à gauche du premier (déjà hors écran)
     for (let i = 0; i < nb; i++) {
@@ -282,19 +359,18 @@ function creerObstacle() {
   }
 }
 
-function mettreAJourObstacles() {
-  frameDepuisDernier++;
+function mettreAJourObstacles(dt) {
+  pixelsDepuisDernier += vitesse * dt;
 
-  // Spawn un obstacle toutes les 140 frames environ
-  if (frameDepuisDernier >= 140) {
+  if (pixelsDepuisDernier >= 560) {
     creerObstacle();
-    frameDepuisDernier = 0;
+    pixelsDepuisDernier = 0;
   }
 
   // Déplacer chaque obstacle vers la gauche et supprimer ceux hors écran
   obstacles = obstacles.filter((obs) => {
-    obs.x -= vitesse;
-    return obs.x + obs.largeur > 0; // garder seulement ceux encore visibles
+    obs.x -= vitesse * dt;
+    return obs.x + obs.largeur > 0;
   });
 }
 
@@ -308,17 +384,22 @@ document.addEventListener("keydown", (e) => {
   }
 
   // Rejouer avec Entrée ou Espace quand le jeu est terminé
-  if ((e.code === "Enter" || e.code === "Space") && !jeuEnCours) {
+  if (
+    (e.code === "Enter" || e.code === "Space") &&
+    !jeuEnCours &&
+    peutRejouer
+  ) {
     e.preventDefault();
     lancerPartie();
     return;
   }
 
-  // --- SAUT (Espace ou Flèche haut) — saut simple uniquement ---
+  // --- SAUT (Espace ou Flèche haut) — impossible si accroupi ---
   if (e.code === "Space" || e.code === "ArrowUp") {
     e.preventDefault();
-    if (joueur.sauts === 0) {
-      joueur.velociteY = -17; // force du saut (négatif = vers le haut)
+    if (e.code === "Space") spaceDown = true;
+    if (joueur.sauts === 0 && !joueur.accroupi) {
+      joueur.velociteY = -17;
       joueur.sauts = 1;
     }
   }
@@ -340,6 +421,11 @@ document.addEventListener("keydown", (e) => {
 });
 
 document.addEventListener("keyup", (e) => {
+  if (e.code === "Space") {
+    spaceDown = false;
+    if (!jeuEnCours) peutRejouer = true; // relâché après mort → peut rejouer
+  }
+
   // Quand on relâche la flèche bas → on se relève
   if (e.code === "ArrowDown") {
     joueur.accroupi = false;
@@ -391,58 +477,43 @@ function gameOver() {
   // Sauvegarder le record si battu
   if (score > record) {
     record = score;
-    localStorage.setItem("harissaRecord", record);
   }
 
-  // Dessiner une dernière fois avec l'image mort
+  sauvegarderMedailles();
+  // Si Espace est déjà relâché au moment de la mort, on peut rejouer directement
+  peutRejouer = !spaceDown;
+
+  // Dessiner une dernière fois
   dessiner();
 
-  // Overlay sombre
-  ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Texte GAME OVER
-  ctx.fillStyle = "#fff";
-  ctx.font = "bold 40px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText("GAME OVER", canvas.width / 2, 90);
-
-  // Score et record
-  ctx.font = "20px Arial";
-  ctx.fillText(
-    `Score : ${score}   |   Record : ${record}`,
-    canvas.width / 2,
-    130,
+  // Image de mort centrée
+  const mw = LARGEUR_NORMAL * 6;
+  const mh = HAUTEUR_NORMAL * 3;
+  ctx.drawImage(
+    imgJoueurMort,
+    canvas.width / 2 - mw / 2,
+    canvas.height - mh,
+    mw,
+    mh,
   );
-
-  // Médaille obtenue
-  /* MEDAILLES_CANVAS — décommenter avec les slots DOM
-  const medaille = obtenirMedaille(score);
-  if (medaille) {
-    ctx.fillStyle = medaille.couleur;
-    ctx.font = "bold 22px Arial";
-    ctx.fillText(medaille.label, canvas.width / 2, 165);
-  }
-  */
-
-  // Instruction rejouer
-  ctx.fillStyle = "#fff";
-  ctx.font = "18px Arial";
-  ctx.fillText("Appuie sur Espace pour rejouer", canvas.width / 2, 210);
 }
 
 // ============================================================
 // BOUCLE PRINCIPALE DU JEU
 // Appelée ~60 fois par seconde par le navigateur
 // ============================================================
-function gameLoop() {
+function gameLoop(timestamp) {
   if (!jeuEnCours) return;
   if (enPause) return; // boucle suspendue, reprendra via togglePause()
 
+  // dt = 1.0 à 60fps, 0.5 à 120fps, 0.25 à 240fps — normalise le mouvement
+  const dt = lastTime ? Math.min((timestamp - lastTime) / (1000 / 60), 3) : 1;
+  lastTime = timestamp;
+
   // 1. Mettre à jour la logique
-  mettreAJourJoueur();
-  mettreAJourObstacles();
-  mettreAJourScore();
+  mettreAJourJoueur(dt);
+  mettreAJourObstacles(dt);
+  mettreAJourScore(dt);
 
   // 2. Vérifier les collisions — si touché, game over et on arrête la boucle
   if (verifierCollisions()) {
@@ -451,7 +522,7 @@ function gameLoop() {
   }
 
   // 3. Dessiner l'état actuel sur le canvas
-  dessiner();
+  dessiner(dt);
 
   // 4. Demander au navigateur d'appeler gameLoop() à la prochaine frame
   animationId = requestAnimationFrame(gameLoop);
@@ -461,10 +532,10 @@ function gameLoop() {
 // PHYSIQUE DU JOUEUR
 // Appelée à chaque frame pour mettre à jour sa position
 // ============================================================
-function mettreAJourJoueur() {
+function mettreAJourJoueur(dt) {
   // Appliquer la gravité : accélère la chute à chaque frame
-  joueur.velociteY += GRAVITE;
-  joueur.y += joueur.velociteY;
+  joueur.velociteY += GRAVITE * dt;
+  joueur.y += joueur.velociteY * dt;
 
   // Calculer la position Y du sol selon l'état (debout ou accroupi)
   const solActuel = SOL_Y - joueur.hauteur;
@@ -478,12 +549,12 @@ function mettreAJourJoueur() {
 }
 
 // --- Fonction de dessin ---
-function dessiner() {
+function dessiner(dt = 1) {
   // Effacer tout le canvas avant de redessiner
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Fond défilant : deux copies côte à côte pour la boucle infinie
-  xFond -= vitesse * 0.4;
+  xFond -= vitesse * 0.4 * dt;
   if (xFond <= -canvas.width) xFond = 0;
   const fondActuel = modeNuit ? imgFondNuit : imgFond;
   ctx.drawImage(fondActuel, xFond, 0, canvas.width, canvas.height);
@@ -502,9 +573,7 @@ function dessiner() {
 
   // Joueur : choisir l'image selon l'état
   let imgJoueur;
-  if (joueur.mort) {
-    imgJoueur = imgJoueurMort;
-  } else if (joueur.accroupi) {
+  if (joueur.accroupi) {
     imgJoueur = imgJoueurAccroupi;
   } else {
     // Alterner Cours1 et Cours2 toutes les 8 frames
@@ -544,13 +613,14 @@ function dessiner() {
 function lancerPartie() {
   if (jeuEnCours) return;
   enPause = false;
+  btnPause.textContent = "⏸";
   reinitialiserMedailles();
   // Réinitialiser le score, les obstacles et la vitesse
   score = 0;
   frameScore = 0;
   obstacles = [];
-  frameDepuisDernier = 0;
-  vitesse = 6;
+  pixelsDepuisDernier = 0;
+  vitesse = 7.62;
   xFond = 0;
 
   // Réinitialiser le joueur
@@ -565,10 +635,8 @@ function lancerPartie() {
 
   // Annuler toute boucle existante pour éviter les doublons
   if (animationId) cancelAnimationFrame(animationId);
+  lastTime = 0;
   jeuEnCours = true;
   animationId = requestAnimationFrame(gameLoop);
+  if (typeof jouerMusiqueAleatoire === "function") jouerMusiqueAleatoire();
 }
-
-// Connexion du bouton Play (le bouton Pause a déjà onclick="togglePause()" dans le HTML)
-const boutons = document.querySelectorAll("#gameContainer button");
-boutons[0].addEventListener("click", lancerPartie);

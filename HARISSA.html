@@ -84,7 +84,7 @@
         box-shadow:
           0 0 0 3px var(--sand-light),
           0 12px 40px rgba(0, 0, 0, 0.3);
-        width: 600px;
+        width: 820px;
         position: relative;
         overflow: hidden;
         animation: welcomePop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -119,13 +119,14 @@
       /* ── Titre principal ──────────────────────────────────────── */
       .welcomeBox h1 {
         font-family: "Press Start 2P", cursive;
-        font-size: 26px;
+        font-size: 28px;
         color: var(--red-tunisia);
         text-shadow:
           3px 3px 0 var(--red-dark),
           5px 5px 8px rgba(0, 0, 0, 0.15);
         margin-top: 14px;
         line-height: 1.5;
+        white-space: nowrap;
         animation: titleBounce 2s ease-in-out infinite;
       }
 
@@ -220,7 +221,7 @@
       /* Titre HARISSA dans la zone de jeu */
       #gameContainer h1 {
         font-family: "Press Start 2P", cursive;
-        font-size: 22px;
+        font-size: 24px;
         color: var(--red-tunisia);
         text-shadow: 2px 2px 0 var(--red-dark);
         margin-bottom: 10px;
@@ -287,8 +288,6 @@
           transform: scale(1.1);
         }
       }
-
-
 
       /* ── Boutons Start / Restart ──────────────────────────────── */
       button {
@@ -491,18 +490,25 @@
       <h1>HARISSA JUMP</h1>
       <div id="scoreZone">Score : 0 | Score précédent : 0</div>
       <div id="gameArea"></div>
-      <div>
-        <button onclick="lancerPartie()">Play</button>
-        <button onclick="togglePause()">Pause</button>
-      </div>
     </div>
 
-    <audio id="startSound" src="musique1.mp3"></audio>
+    <audio id="musiqueJeu" loop></audio>
     <script src="Harissa.js"></script>
 
     <script>
+      // Ajoute tes fichiers ici pour les inclure dans la rotation aléatoire
+      const MUSIQUES = ["musique1.mp3"];
+
+      function jouerMusiqueAleatoire() {
+        const musique = document.getElementById("musiqueJeu");
+        const src = MUSIQUES[Math.floor(Math.random() * MUSIQUES.length)];
+        musique.src = src;
+        musique.currentTime = 0;
+        musique.play();
+      }
+
       function startGame() {
-        document.getElementById("startSound").play();
+        jouerMusiqueAleatoire();
         document.getElementById("welcomeScreen").style.display = "none";
         let game = document.getElementById("gameContainer");
         game.style.display = "block";
