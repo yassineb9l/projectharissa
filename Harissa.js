@@ -16,7 +16,7 @@ const ctx = canvas.getContext("2d");
 let jeuEnCours = false;
 let enPause = false;
 let debugHitbox = false; // appuie sur D pour voir les hitboxes
-let peutRejouer = false; // évite de relancer si Espace est maintenu à la mort
+let peutRejouer = true; // évite de relancer si Espace est maintenu à la mort
 let spaceDown = false; // suit l'état de la touche Espace en temps réel
 
 function togglePause() {
@@ -102,7 +102,7 @@ function mettreAJourScore(dt) {
   }
 
   // Augmenter la vitesse tous les 100 points
-  vitesse = 7.62 * Math.pow(1.1, Math.floor(score / 200));
+  vitesse = 8.0 * Math.pow(1.1, Math.floor(score / 200));
 }
 
 // ============================================================
@@ -154,14 +154,17 @@ btnLumiere.addEventListener("click", () => {
 gameArea.style.position = "relative";
 gameArea.appendChild(btnLumiere);
 
+let musiqueActive = true;
+
 const btnMusique = document.createElement("button");
 btnMusique.textContent = "🔊";
 btnMusique.style.cssText =
   "position:absolute; top:55px; right:10px; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.6); border-radius:50%; width:40px; height:40px; font-size:20px; cursor:pointer; z-index:10; display:flex; align-items:center; justify-content:center; line-height:1;";
 btnMusique.tabIndex = -1;
 btnMusique.addEventListener("click", () => {
+  musiqueActive = !musiqueActive;
   const musique = document.getElementById("musiqueJeu");
-  if (musique.paused) {
+  if (musiqueActive) {
     musique.play();
     btnMusique.textContent = "🔊";
   } else {
@@ -198,7 +201,7 @@ SLOTS_MEDAILLES.forEach(({ id, src }) => {
   const img = document.createElement("img");
   img.src = src;
   img.style.cssText =
-    "width:121px; height:121px; object-fit:contain; display:block;";
+    "width:133px; height:133px; object-fit:contain; display:block;";
   slot.appendChild(img);
   medalContainer.appendChild(slot);
 });
@@ -237,55 +240,55 @@ let xFond = 0; // position X du fond défilant
 // HITBOXES — modifie ces constantes pour ajuster chaque obstacle
 // gauche/droite/haut/bas = pixels retirés de chaque côté
 // ============================================================
-const HB_DECOR1 = { gauche: 30, droite: 30, haut: 30, bas: 30 };
+const HB_DECOR1 = { gauche: 35, droite: 58, haut: 35, bas: 30 };
 const HB_DECOR2 = { gauche: 35, droite: 35, haut: 75, bas: 35 }; // haut = marge + decalageHaut
 const HB_DECOR3 = { gauche: 45, droite: 45, haut: 70, bas: 45 };
-const HB_DECOR4 = { gauche: 35, droite: 70, haut: 30, bas: 30 };
-const HB_DECOR5 = { gauche: 52, droite: 65, haut: 35, bas: 35 };
+const HB_DECOR4 = { gauche: 43, droite: 70, haut: 30, bas: 30 };
+const HB_DECOR5 = { gauche: 57, droite: 75, haut: 35, bas: 35 };
 const HB_CACTUS = { gauche: 27, droite: 27, haut: 32, bas: 20 };
-const HB_OISEAU = { gauche: 25, droite: 25, haut: 25, bas: 25 };
+const HB_OISEAU = { gauche: 30, droite: 40, haut: 25, bas: 27 };
 
 // Les obstacles possibles — chacun a sa taille et son image
 const TYPES_OBSTACLES = [
   {
-    largeur: 204,
-    hauteur: 185,
-    offsetSol: 40,
+    largeur: 214,
+    hauteur: 194,
+    offsetSol: 45,
     hb: HB_DECOR1,
     image: imgObstacle1,
   },
   {
-    largeur: 226,
-    hauteur: 204,
-    offsetSol: 61,
+    largeur: 237,
+    hauteur: 214,
+    offsetSol: 65,
     hb: HB_DECOR2,
     image: imgObstacle2,
   },
   {
-    largeur: 255,
-    hauteur: 230,
-    offsetSol: 67,
+    largeur: 268,
+    hauteur: 242,
+    offsetSol: 72,
     hb: HB_DECOR3,
     image: imgObstacle3,
   },
   {
-    largeur: 204,
-    hauteur: 182,
-    offsetSol: 30,
+    largeur: 214,
+    hauteur: 191,
+    offsetSol: 33,
     hb: HB_DECOR4,
     image: imgObstacle4,
   },
   {
-    largeur: 253,
-    hauteur: 226,
-    offsetSol: 62,
+    largeur: 266,
+    hauteur: 237,
+    offsetSol: 66,
     hb: HB_DECOR5,
     image: imgObstacle5,
   },
   // Cactus
   {
-    largeur: 110,
-    hauteur: 190,
+    largeur: 116,
+    hauteur: 200,
     offsetSol: 50,
     hb: HB_CACTUS,
     image: imgCactus,
@@ -333,7 +336,8 @@ function creerObstacle() {
 
   if (type.estCactus) {
     // 1, 2 ou 3 cactus — le groupe part ensemble du bord droit
-    const nb = Math.floor(Math.random() * 3) + 1;
+    const maxCactus = score >= 250 ? 3 : 2;
+    const nb = Math.floor(Math.random() * maxCactus) + 1;
     const gap = -20; // négatif = chevauchement, groupe compact
     // xBase : le premier cactus du groupe commence à canvas.width
     // les suivants sont placés à gauche du premier (déjà hors écran)
@@ -362,7 +366,9 @@ function creerObstacle() {
 function mettreAJourObstacles(dt) {
   pixelsDepuisDernier += vitesse * dt;
 
-  if (pixelsDepuisDernier >= 560) {
+  const distanceSpawn =
+    560 * Math.pow(1.055, Math.max(0, Math.floor((score - 200) / 200)));
+  if (pixelsDepuisDernier >= distanceSpawn) {
     creerObstacle();
     pixelsDepuisDernier = 0;
   }
@@ -473,6 +479,13 @@ function verifierCollisions() {
 function gameOver() {
   jeuEnCours = false;
   joueur.mort = true;
+
+  // Arrêter la musique
+  const musique = document.getElementById("musiqueJeu");
+  if (musique) {
+    musique.pause();
+    musique.currentTime = 0;
+  }
 
   // Sauvegarder le record si battu
   if (score > record) {
@@ -620,7 +633,7 @@ function lancerPartie() {
   frameScore = 0;
   obstacles = [];
   pixelsDepuisDernier = 0;
-  vitesse = 7.62;
+  vitesse = 8.0;
   xFond = 0;
 
   // Réinitialiser le joueur
@@ -638,5 +651,22 @@ function lancerPartie() {
   lastTime = 0;
   jeuEnCours = true;
   animationId = requestAnimationFrame(gameLoop);
-  if (typeof jouerMusiqueAleatoire === "function") jouerMusiqueAleatoire();
+  if (typeof jouerMusiqueAleatoire === "function" && musiqueActive)
+    jouerMusiqueAleatoire();
 }
+
+// Écran d'attente — affiché dans le rectangle avant la première partie
+function dessinerEcranAttente() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const fond = modeNuit ? imgFondNuit : imgFond;
+  ctx.drawImage(fond, 0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 22px 'Press Start 2P', cursive";
+  ctx.textAlign = "center";
+  ctx.fillText("Press Space to play", canvas.width / 2, canvas.height / 2);
+}
+// Attendre que les images soient chargées avant de dessiner
+imgFond.onload = dessinerEcranAttente;
+imgFondNuit.onload = dessinerEcranAttente;
