@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HARISSA</title>
 
-    <!-- Google Fonts : pixel art + titre arrondi -->
+    <!-- Google Fonts: pixel art + rounded title -->
     <link
       href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&display=swap"
       rel="stylesheet"
@@ -13,11 +14,11 @@
     <style>
       /* ============================================================
    CSS — HARISSA Jump & Run
-   Thème : Tunisie – désert, sable, monuments pixel art
-   Auteur : Youssef
+   Theme: Tunisia – desert, sand, pixel art monuments
+   Author: Youssef
    ============================================================ */
 
-      /* ── Variables de couleurs ────────────────────────────────── */
+      /* ── Color variables ─────────────────────────────────────── */
       :root {
         --sand-light: #f5d98b;
         --sand-mid: #e6cfb0;
@@ -51,18 +52,26 @@
         background-attachment: fixed;
         min-height: 100vh;
         text-align: center;
+        overflow: hidden;
+        position: relative;
+      }
+
+      /* ── Scale wrapper ───────────────────────────────────────── */
+      #scaleWrapper {
+        width: 1160px;
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform-origin: top left;
       }
 
       /* ══════════════════════════════════════════════════════════
-   ÉCRAN DE BIENVENUE
+   WELCOME SCREEN
    ══════════════════════════════════════════════════════════ */
 
       #welcomeScreen {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        width: 1160px;
+        min-height: 730px;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -72,10 +81,9 @@
           #fad6a5 50%,
           #e6cfb0 100%
         );
-        z-index: 100;
       }
 
-      /* ── Boîte centrale ───────────────────────────────────────── */
+      /* ── Center box ──────────────────────────────────────────── */
       .welcomeBox {
         background: linear-gradient(135deg, #fffbf0 0%, #fff3d0 100%);
         padding: 50px 60px;
@@ -90,7 +98,7 @@
         animation: welcomePop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
       }
 
-      /* Bande rouge/blanc en haut (drapeau tunisien) */
+      /* Red/white stripe at top (Tunisian flag) */
       .welcomeBox::before {
         content: "";
         position: absolute;
@@ -116,7 +124,7 @@
         }
       }
 
-      /* ── Titre principal ──────────────────────────────────────── */
+      /* ── Main title ──────────────────────────────────────────── */
       .welcomeBox h1 {
         font-family: "Press Start 2P", cursive;
         font-size: 28px;
@@ -140,16 +148,7 @@
         }
       }
 
-      /* ── Sous-titre ───────────────────────────────────────────── */
-      .welcomeBox h3 {
-        font-family: "Fredoka One", cursive;
-        font-size: 20px;
-        color: var(--sand-dark);
-        margin-top: 10px;
-        letter-spacing: 1px;
-      }
-
-      /* ── Image de bienvenue ───────────────────────────────────── */
+      /* ── Welcome image ───────────────────────────────────────── */
       .welcomeImage {
         width: 260px;
         margin: 28px auto;
@@ -168,7 +167,7 @@
         }
       }
 
-      /* ── Bouton Jouer ─────────────────────────────────────────── */
+      /* ── Play button ─────────────────────────────────────────── */
       .playBtn {
         font-family: "Press Start 2P", cursive;
         font-size: 14px;
@@ -209,7 +208,7 @@
       }
 
       /* ══════════════════════════════════════════════════════════
-   ZONE DU JEU
+   GAME AREA
    ══════════════════════════════════════════════════════════ */
 
       #gameContainer {
@@ -218,7 +217,7 @@
         padding-bottom: 30px;
       }
 
-      /* Titre HARISSA dans la zone de jeu */
+      /* HARISSA title in the game area */
       #gameContainer h1 {
         font-family: "Press Start 2P", cursive;
         font-size: 24px;
@@ -228,7 +227,7 @@
         letter-spacing: 2px;
       }
 
-      /* ── Zone score ───────────────────────────────────────────── */
+      /* ── Score area ──────────────────────────────────────────── */
       #scoreZone {
         font-family: "Press Start 2P", cursive;
         font-size: 12px;
@@ -243,16 +242,16 @@
         letter-spacing: 1px;
       }
 
-      /* ── Zone de jeu (terrain) ────────────────────────────────── */
+      /* ── Game terrain ────────────────────────────────────────── */
       #gameArea {
-        width: 800px;
-        height: 300px;
+        width: 1100px;
+        height: 450px;
         border: 4px solid var(--sand-dark);
         margin: 20px auto;
         position: relative;
         overflow: hidden;
         border-radius: 10px;
-        /* Décor : ciel + horizon + sol sable */
+        /* Decor: sky + horizon + sand floor */
         background:
           linear-gradient(
             to bottom,
@@ -274,22 +273,7 @@
           0 10px 25px rgba(0, 0, 0, 0.3);
       }
 
-      /* Soleil dans le coin */
-      #gameArea::before {
-        content: none;
-      }
-
-      @keyframes sunPulse {
-        0%,
-        100% {
-          transform: scale(1);
-        }
-        50% {
-          transform: scale(1.1);
-        }
-      }
-
-      /* ── Boutons Start / Restart ──────────────────────────────── */
+      /* ── Start / Restart buttons ─────────────────────────────── */
       button {
         font-family: "Fredoka One", cursive;
         font-size: 16px;
@@ -308,27 +292,7 @@
         transform: scale(0.95);
       }
 
-      /* Premier bouton = Start (rouge) */
-      #gameContainer div button:first-child {
-        background: var(--red-tunisia);
-        color: white;
-        box-shadow: 0 5px 0 var(--red-dark);
-      }
-      #gameContainer div button:first-child:hover {
-        background: var(--red-dark);
-      }
-
-      /* Deuxième bouton = Restart (bleu) */
-      #gameContainer div button:last-child {
-        background: #457b9d;
-        color: white;
-        box-shadow: 0 5px 0 #1d3557;
-      }
-      #gameContainer div button:last-child:hover {
-        background: #1d3557;
-      }
-
-      /* ── Animation fade (utilisée par JS) ────────────────────── */
+      /* ── Fade animation (used by JS) ─────────────────────────── */
       .fade {
         animation: fadeIn 0.5s ease both;
       }
@@ -344,138 +308,12 @@
         }
       }
 
-      /* ══════════════════════════════════════════════════════════
-   PERSONNAGE & OBSTACLES (pour le JS de Gabriel/Mohamed)
-   ══════════════════════════════════════════════════════════ */
-
-      /* Harissa en jeu */
-      #harissa {
-        position: absolute;
-        bottom: 75px;
-        left: 80px;
-        width: 70px;
-        height: 80px;
-        image-rendering: pixelated;
-        animation: run 0.4s steps(2) infinite;
-        z-index: 5;
-      }
-
-      @keyframes run {
-        0% {
-          transform: rotate(-3deg);
-        }
-        50% {
-          transform: rotate(3deg);
-        }
-        100% {
-          transform: rotate(-3deg);
-        }
-      }
-
-      #harissa.jumping {
-        animation: jumpAnim 0.5s ease forwards;
-      }
-
-      @keyframes jumpAnim {
-        0% {
-          transform: scaleY(1.1) rotate(0deg);
-        }
-        40% {
-          transform: scaleY(0.95) rotate(-12deg);
-        }
-        100% {
-          transform: scaleY(1) rotate(0deg);
-        }
-      }
-
-      #harissa.ducking {
-        animation: none;
-        transform: scaleY(0.5) translateY(32px);
-      }
-
-      #harissa.dead {
-        animation: shake 0.4s ease;
-        filter: drop-shadow(0 0 12px rgba(255, 0, 0, 0.7));
-      }
-
-      @keyframes shake {
-        0%,
-        100% {
-          transform: translateX(0);
-        }
-        25% {
-          transform: translateX(-7px) rotate(-5deg);
-        }
-        75% {
-          transform: translateX(7px) rotate(5deg);
-        }
-      }
-
-      /* Obstacles */
-      .obstacle {
-        position: absolute;
-        bottom: 75px;
-        image-rendering: pixelated;
-        filter: drop-shadow(2px 5px 5px rgba(0, 0, 0, 0.35));
-        z-index: 4;
-      }
-
-      /* Game Over */
-      #gameArea.gameover::before {
-        content: "GAME OVER";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-family: "Press Start 2P", cursive;
-        font-size: 26px;
-        color: white;
-        background: rgba(180, 0, 0, 0.82);
-        padding: 16px 32px;
-        border-radius: 10px;
-        border: 3px solid rgba(255, 255, 255, 0.4);
-        z-index: 20;
-        animation: gameOverFlash 0.5s ease both;
-      }
-
-      @keyframes gameOverFlash {
-        0% {
-          opacity: 0;
-          transform: translate(-50%, -50%) scale(0.4);
-        }
-        60% {
-          transform: translate(-50%, -50%) scale(1.06);
-        }
-        100% {
-          opacity: 1;
-          transform: translate(-50%, -50%) scale(1);
-        }
-      }
-
-      /* Médailles */
-      .medal {
-        display: inline-block;
-        font-size: 26px;
-        margin-left: 10px;
-        vertical-align: middle;
-        animation: medalPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-      }
-
-      @keyframes medalPop {
-        from {
-          opacity: 0;
-          transform: scale(0) rotate(-20deg);
-        }
-        to {
-          opacity: 1;
-          transform: scale(1) rotate(0deg);
-        }
-      }
     </style>
   </head>
 
   <body>
-    <!-- PAGE BIENVENUE -->
+    <div id="scaleWrapper">
+    <!-- WELCOME PAGE -->
     <div id="welcomeScreen">
       <div class="welcomeBox">
         <h1>Welcome to HARISSA JUMP</h1>
@@ -485,20 +323,21 @@
       </div>
     </div>
 
-    <!-- PAGE DU JEU -->
+    <!-- GAME PAGE -->
     <div id="gameContainer">
       <h1>HARISSA JUMP</h1>
-      <div id="scoreZone">Score : 0 | Score précédent : 0</div>
+      <div id="scoreZone">Score : 0 | Record : 0</div>
       <div id="gameArea"></div>
     </div>
 
-    <audio id="musiqueJeu" loop></audio>
+    </div><!-- end scaleWrapper -->
+
+    <audio id="musiqueJeu"></audio>
     <script src="Harissa.js"></script>
 
     <script>
-      // Ajoute tes fichiers ici pour les inclure dans la rotation aléatoire
-      const MUSIQUE_ACCUEIL = "musique1.mp3";
-      const MUSIQUES_JEU = ["musique2.mp3", "musique3.mp3", "musique4.mp3"];
+      // Add your files here to include them in the random rotation
+      const MUSIQUES_JEU = ["musique1.mp3", "musique2.mp3", "musique3.mp3", "musique4.mp3"];
       let indexMusique = 0;
 
       function jouerMusiqueAleatoire() {
@@ -509,16 +348,37 @@
         musique.play();
       }
 
+      // Play the next track with a 2s gap when a track ends
+      document.getElementById("musiqueJeu").addEventListener("ended", () => {
+        if (typeof jeuEnCours !== "undefined" && jeuEnCours && typeof musiqueActive !== "undefined" && musiqueActive) {
+          setTimeout(jouerMusiqueAleatoire, 2000);
+        }
+      });
+
       function startGame() {
-        const musique = document.getElementById("musiqueJeu");
-        musique.src = MUSIQUE_ACCUEIL;
-        musique.currentTime = 0;
-        musique.play();
         document.getElementById("welcomeScreen").style.display = "none";
         let game = document.getElementById("gameContainer");
         game.style.display = "block";
         game.classList.add("fade");
+        ajusterEchelle();
       }
+
+      function ajusterEchelle() {
+        const wrapper = document.getElementById("scaleWrapper");
+        if (!wrapper) return;
+        const LARGEUR_JEU = 1160;
+        const HAUTEUR_JEU = 730;
+        const scale = Math.min(
+          window.innerWidth / LARGEUR_JEU,
+          window.innerHeight / HAUTEUR_JEU
+        );
+        const left = Math.max(0, (window.innerWidth - LARGEUR_JEU * scale) / 2);
+        wrapper.style.transform = `scale(${scale})`;
+        wrapper.style.left = left + "px";
+      }
+
+      window.addEventListener("resize", ajusterEchelle);
+      window.addEventListener("load", ajusterEchelle);
     </script>
   </body>
 </html>
