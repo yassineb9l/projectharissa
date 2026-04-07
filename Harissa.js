@@ -687,37 +687,52 @@ imgFondNuit.onload = dessinerEcranAttente;
 // ============================================================
 let touchStartY = 0;
 
-canvas.addEventListener("touchstart", (e) => {
-  e.preventDefault();
-  touchStartY = e.touches[0].clientY;
-  if (!jeuEnCours && peutRejouer) { lancerPartie(); return; }
-  if (joueur.sauts === 0 && !joueur.accroupi) {
-    joueur.velociteY = -17;
-    joueur.sauts = 1;
-  }
-}, { passive: false });
-
-canvas.addEventListener("touchmove", (e) => {
-  e.preventDefault();
-  const dy = e.touches[0].clientY - touchStartY;
-  if (dy > 30 && !joueur.accroupi) {
-    joueur.accroupi = true;
-    joueur.hauteur = HAUTEUR_ACCROUPI;
-    joueur.largeur = LARGEUR_ACCROUPI;
-    if (joueur.sauts === 0) {
-      joueur.y = SOL_Y - HAUTEUR_ACCROUPI;
-    } else {
-      joueur.velociteY = Math.max(joueur.velociteY, 10);
+canvas.addEventListener(
+  "touchstart",
+  (e) => {
+    e.preventDefault();
+    touchStartY = e.touches[0].clientY;
+    if (!jeuEnCours && peutRejouer) {
+      lancerPartie();
+      return;
     }
-  }
-}, { passive: false });
+    if (joueur.sauts === 0 && !joueur.accroupi) {
+      joueur.velociteY = -17;
+      joueur.sauts = 1;
+    }
+  },
+  { passive: false },
+);
 
-canvas.addEventListener("touchend", (e) => {
-  e.preventDefault();
-  joueur.accroupi = false;
-  joueur.hauteur = HAUTEUR_NORMAL;
-  joueur.largeur = LARGEUR_NORMAL;
-  if (joueur.sauts === 0) {
-    joueur.y = SOL_Y - HAUTEUR_NORMAL;
-  }
-}, { passive: false });
+canvas.addEventListener(
+  "touchmove",
+  (e) => {
+    e.preventDefault();
+    const dy = e.touches[0].clientY - touchStartY;
+    if (dy > 30 && !joueur.accroupi) {
+      joueur.accroupi = true;
+      joueur.hauteur = HAUTEUR_ACCROUPI;
+      joueur.largeur = LARGEUR_ACCROUPI;
+      if (joueur.sauts === 0) {
+        joueur.y = SOL_Y - HAUTEUR_ACCROUPI;
+      } else {
+        joueur.velociteY = Math.max(joueur.velociteY, 10);
+      }
+    }
+  },
+  { passive: false },
+);
+
+canvas.addEventListener(
+  "touchend",
+  (e) => {
+    e.preventDefault();
+    joueur.accroupi = false;
+    joueur.hauteur = HAUTEUR_NORMAL;
+    joueur.largeur = LARGEUR_NORMAL;
+    if (joueur.sauts === 0) {
+      joueur.y = SOL_Y - HAUTEUR_NORMAL;
+    }
+  },
+  { passive: false },
+);
