@@ -402,7 +402,7 @@ document.addEventListener("keydown", (e) => {
     e.preventDefault();
     if (e.code === "Space") spaceDown = true;
     if (joueur.sauts === 0 && !joueur.accroupi) {
-      joueur.velociteY = -17;
+      joueur.velociteY = -17; // vertical speed
       joueur.sauts = 1;
     }
   }
