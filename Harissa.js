@@ -134,11 +134,11 @@ btnLumiere.style.cssText =
   "position:absolute; top:10px; right:10px; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.6); border-radius:50%; width:40px; height:40px; font-size:20px; cursor:pointer; z-index:10; display:flex; align-items:center; justify-content:center; line-height:1;";
 btnLumiere.tabIndex = -1; // prevents the button from receiving keyboard focus
 btnLumiere.addEventListener("click", () => {
-  modeNuit = !modeNuit;
+  modeNuit = !modeNuit; // false becomes true, true becomes false
   if (enPause) dessiner();
   if (!jeuEnCours && joueur.mort) gameOver();
 });
-gameArea.appendChild(btnLumiere);
+gameArea.appendChild(btnLumiere); // Places the button inside the game area div
 
 let musiqueActive = true;
 
