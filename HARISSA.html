@@ -273,7 +273,7 @@
           0 10px 25px rgba(0, 0, 0, 0.3);
       }
 
-      /* ── Start / Restart buttons ─────────────────────────────── */
+      /* ── Buttons ─────────────────────────────────────────────── */
       button {
         font-family: "Fredoka One", cursive;
         font-size: 16px;
@@ -318,7 +318,6 @@
       <div class="welcomeBox">
         <h1>Welcome to HARISSA JUMP</h1>
         <img src="Bienvenue.png" class="welcomeImage" />
-        <br />
         <button class="playBtn" onclick="startGame()">Play</button>
       </div>
     </div>
@@ -345,7 +344,7 @@
         musique.src = MUSIQUES_JEU[indexMusique % MUSIQUES_JEU.length];
         indexMusique++;
         musique.currentTime = 0;
-        musique.play();
+        musique.play().catch(() => {});
       }
 
       // Play the next track with a 2s gap when a track ends

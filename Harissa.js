@@ -7,8 +7,6 @@ const canvas = document.createElement("canvas");
 canvas.width = 1100;
 canvas.height = 450;
 const gameArea = document.getElementById("gameArea");
-gameArea.style.width = canvas.width + "px";
-gameArea.style.height = canvas.height + "px";
 gameArea.appendChild(canvas);
 const ctx = canvas.getContext("2d");
 
@@ -23,7 +21,10 @@ function togglePause() {
   if (!jeuEnCours) return;
   enPause = !enPause;
   btnPause.textContent = enPause ? "▶" : "⏸";
-  if (!enPause) requestAnimationFrame(gameLoop);
+  if (!enPause) {
+    lastTime = 0;
+    requestAnimationFrame(gameLoop);
+  }
 }
 let animationId = null; // reference to requestAnimationFrame to avoid duplicates
 let lastTime = 0; // timestamp of the last frame for delta time
